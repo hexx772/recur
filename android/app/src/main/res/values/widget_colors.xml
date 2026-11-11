@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Запасная светлая палитра (Android 11 и ниже), тона Material 3. -->
+    <color name="widget_surface">#FEF7FF</color>
+    <color name="widget_on_surface">#1D1B20</color>
+    <color name="widget_container">#ECE6F0</color>
+    <color name="widget_on_container">#1D1B20</color>
+    <color name="widget_muted">#49454F</color>
+    <color name="widget_primary_c">#E2DFFF</color>
+    <color name="widget_on_primary_c">#170065</color>
+    <color name="widget_secondary_c">#E4DFF9</color>
+    <color name="widget_on_secondary_c">#1B192C</color>
+    <color name="widget_tertiary_c">#FFD8E4</color>
+    <color name="widget_on_tertiary_c">#31111D</color>
+    <color name="widget_error_c">#FFDAD6</color>
+    <color name="widget_on_error_c">#410002</color>
+</resources>

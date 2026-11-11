@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_name_list">Recur · список</string>
+    <string name="widget_name_next">Recur · ближайшее</string>
+    <string name="widget_name_total">Recur · итог</string>
+    <string name="widget_description_list">Все подписки с датами списаний, подстраивается под размер</string>
+    <string name="widget_description_next">Ближайшее списание крупно</string>
+    <string name="widget_description_total">Расходы на подписки за месяц и за год</string>
+
+    <string name="widget_label_month">В МЕСЯЦ</string>
+    <string name="widget_empty_list">Добавьте подписку в приложении</string>
+    <string name="widget_next_label">БЛИЖАЙШЕЕ</string>
+    <string name="widget_next_empty">Нет подписок</string>
+    <string name="widget_more">и ещё %1$d</string>
+    <string name="widget_year">В год: %1$s</string>
+    <string name="widget_count_line">Подписок: %1$d</string>
+    <string name="widget_trials_part"> · триалов: %1$d</string>
+
+    <plurals name="widget_subscriptions">
+        <item quantity="one">%1$d подписка</item>
+        <item quantity="few">%1$d подписки</item>
+        <item quantity="many">%1$d подписок</item>
+        <item quantity="other">%1$d подписки</item>
+    </plurals>
+</resources>

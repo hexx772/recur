@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Не удалять значок уведомлений при сжатии ресурсов в release-сборке:
+     он подключается по имени из кода. -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@drawable/ic_stat_recur" />

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Строки виджетов: язык по умолчанию английский, русский в values-ru. -->
+<resources>
+    <string name="widget_name_list">Recur · list</string>
+    <string name="widget_name_next">Recur · next</string>
+    <string name="widget_name_total">Recur · total</string>
+    <string name="widget_description_list">All subscriptions with charge dates, fits the widget size</string>
+    <string name="widget_description_next">The next charge at a glance</string>
+    <string name="widget_description_total">Subscription spending per month and per year</string>
+
+    <string name="widget_label_month">PER MONTH</string>
+    <string name="widget_empty_list">Add a subscription in the app</string>
+    <string name="widget_next_label">NEXT CHARGE</string>
+    <string name="widget_next_empty">No subscriptions</string>
+    <string name="widget_more">and %1$d more</string>
+    <string name="widget_year">Per year: %1$s</string>
+    <string name="widget_count_line">Subscriptions: %1$d</string>
+    <string name="widget_trials_part"> · trials: %1$d</string>
+
+    <plurals name="widget_subscriptions">
+        <item quantity="one">%1$d subscription</item>
+        <item quantity="other">%1$d subscriptions</item>
+    </plurals>
+</resources>
