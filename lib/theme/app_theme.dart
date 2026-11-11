@@ -29,12 +29,72 @@ const kPalettes = [
   AppPalette('Фиолет', Color(0xFF8E24AA)),
 ];
 
-ColorScheme expressiveScheme(Brightness b, {Color? seed, bool amoled = false}) {
-  final scheme = ColorScheme.fromSeed(
-    seedColor: seed ?? kSeedColor,
-    brightness: b,
-    dynamicSchemeVariant: DynamicSchemeVariant.expressive,
-  );
+/// Переносит системную схему Material You в схему Flutter. Пакет
+/// `dynamic_color` отдаёт её собственным типом (из `material_ui`), поэтому цвета
+/// копируются поштучно. Если чего-то не хватает, возвращает null, и тогда
+/// схема строится от цвета по умолчанию.
+ColorScheme? schemeFromSystem(dynamic s, Brightness b) {
+  if (s == null) return null;
+  try {
+    Color c(dynamic v) => v as Color;
+    return ColorScheme(
+      brightness: b,
+      primary: c(s.primary),
+      onPrimary: c(s.onPrimary),
+      primaryContainer: c(s.primaryContainer),
+      onPrimaryContainer: c(s.onPrimaryContainer),
+      secondary: c(s.secondary),
+      onSecondary: c(s.onSecondary),
+      secondaryContainer: c(s.secondaryContainer),
+      onSecondaryContainer: c(s.onSecondaryContainer),
+      tertiary: c(s.tertiary),
+      onTertiary: c(s.onTertiary),
+      tertiaryContainer: c(s.tertiaryContainer),
+      onTertiaryContainer: c(s.onTertiaryContainer),
+      error: c(s.error),
+      onError: c(s.onError),
+      errorContainer: c(s.errorContainer),
+      onErrorContainer: c(s.onErrorContainer),
+      surface: c(s.surface),
+      onSurface: c(s.onSurface),
+      onSurfaceVariant: c(s.onSurfaceVariant),
+      outline: c(s.outline),
+      outlineVariant: c(s.outlineVariant),
+      surfaceContainerLowest: c(s.surfaceContainerLowest),
+      surfaceContainerLow: c(s.surfaceContainerLow),
+      surfaceContainer: c(s.surfaceContainer),
+      surfaceContainerHigh: c(s.surfaceContainerHigh),
+      surfaceContainerHighest: c(s.surfaceContainerHighest),
+      inverseSurface: c(s.inverseSurface),
+      onInverseSurface: c(s.onInverseSurface),
+      inversePrimary: c(s.inversePrimary),
+      shadow: c(s.shadow),
+      scrim: c(s.scrim),
+      surfaceTint: c(s.surfaceTint),
+    );
+  } catch (_) {
+    return null;
+  }
+}
+
+/// Цветовая схема приложения.
+///
+/// [system] ― схема Material You из обоев: берётся как есть. Иначе схема
+/// строится от [seed] вариантом vibrant, который сохраняет оттенок выбранного
+/// цвета (режим expressive сдвигает оттенок и делал бы плитку палитры
+/// непохожей на результат).
+ColorScheme expressiveScheme(
+  Brightness b, {
+  Color? seed,
+  ColorScheme? system,
+  bool amoled = false,
+}) {
+  final scheme = system ??
+      ColorScheme.fromSeed(
+        seedColor: seed ?? kSeedColor,
+        brightness: b,
+        dynamicSchemeVariant: DynamicSchemeVariant.vibrant,
+      );
   if (b == Brightness.dark && amoled) {
     // Чёрный фон: поверхности темнее, акценты прежние.
     return scheme.copyWith(

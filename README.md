@@ -11,6 +11,7 @@
   <img alt="Design" src="https://img.shields.io/badge/design-Material%203-6750A4">
   <img alt="License" src="https://img.shields.io/badge/license-MIT-green">
   <img alt="Status" src="https://img.shields.io/badge/status-beta-orange">
+  <a href="https://www.donationalerts.com/r/hashonq1"><img alt="Donate" src="https://img.shields.io/badge/donate-DonationAlerts-F57D07"></a>
 </p>
 
 <p align="center">
@@ -22,6 +23,30 @@
 Recur keeps all your subscriptions in one place so a charge never catches you by surprise. Everything is stored on your device: no account, no server, no ads, no analytics.
 
 > **Status: working beta.** The core app is built and tested on an emulator, but it has not been through a real-world round of testing yet. See [Project status](#project-status) for what is verified and what is not.
+
+## Download
+
+The ready-to-install APK is in [Releases](https://github.com/hexx772/recur/releases/latest): **Recur-1.0.0.apk** (about 58 MB, Android 7.0 or newer).
+
+1. Download the APK on your phone and open it. Android will ask you to allow installs from that source.
+2. Optional: check the file. SHA-256: `4f78fedec58e51d11f9a510aa7c10d99e505bbc52891deb6a5a6dd41372c2bbf`
+
+The APK is signed with the standard Android **debug key**, not a store key. That is fine for trying the app, but it is not a Google Play build. A future build signed with another key can only be installed after uninstalling this one, so export a backup first. Gmail sign-in does not work in this build until you set up your own Google OAuth client.
+
+## Screenshots
+
+<p align="center">
+  <img src="docs/screenshots/01-subscriptions.png" width="19%" alt="Subscriptions">
+  <img src="docs/screenshots/02-analytics.png" width="19%" alt="Analytics">
+  <img src="docs/screenshots/03-add-subscription.png" width="19%" alt="Add a subscription">
+  <img src="docs/screenshots/04-settings.png" width="19%" alt="Settings and themes">
+  <img src="docs/screenshots/05-dark-rose.png" width="19%" alt="Dark theme with the Rose palette">
+</p>
+<p align="center">
+  <img src="docs/screenshots/06-widget-list.png" width="30%" alt="List widget">
+  <img src="docs/screenshots/07-widget-next.png" width="30%" alt="Next charge widget">
+</p>
+<p align="center"><sub>Subscriptions, analytics, the add form, settings, the dark theme with the Rose palette, and two of the three widgets. Taken on an emulator with demo data.</sub></p>
 
 ## Features
 
@@ -81,18 +106,19 @@ Recur follows Material 3 and borrows its Expressive ideas, which Flutter does no
 
 This is an honest snapshot of the current state.
 
-**Works and is checked**
-- The app builds and runs on an Android emulator (API 37). The subscriptions, analytics and settings screens were checked by eye.
-- Static analysis is clean and 18 unit tests pass: parsing of emails and SMS, shares and trials, cancellation links, backup with settings, English translations.
-- Release APK builds (about 58 MB).
+**Works and is checked** (on an Android emulator, API 37)
+- The release APK installs and runs. The subscriptions, analytics, add-subscription and settings screens, the light and dark themes with several palettes, and the English interface were checked by eye. The screenshots above come from this build.
+- Restoring a backup from a file works, together with the settings stored in it.
+- The notification permission is requested on first launch.
+- The **List** widget fits its rows to the size it is given and collapses the rest into an "and N more" line. The **Next** widget loads and shows the next charge. The **Total** widget's preview loads, but it was not placed on the home screen.
+- Static analysis is clean and 19 unit tests pass: parsing of emails and SMS, shares and trials, cancellation links, backup with settings, palettes, English translations.
 
-**Written but not verified on a real device**
-- Home screen widgets. Their layout and the row-fitting logic were fixed after a bug, but they have not been seen on a phone or across different launchers, which report widget size differently.
+**Not verified yet**
+- Anything on a real phone. The emulator was the only device used, and launchers differ in how they report widget size.
 - Notification delivery and timing (scheduling is inexact, so delivery can be a few minutes late).
-- Theme switching, the latest widget design, and the English interface were only checked by analysis and tests, not visually.
-- The English translation is unreviewed by a native speaker.
-- Backup export and restore through the system file picker.
-- Parsing of real bank SMS, which differ a lot between banks. Only a built-in list of services is recognised.
+- Backup export through the share sheet (only restore was exercised).
+- The English translation has not been reviewed by a native speaker. A few brand names in the quick-pick list (for example Yandex Plus) stay in Russian.
+- Gmail sign-in, and parsing of real bank SMS, which differ a lot between banks. Only a built-in list of services is recognised.
 
 **Known limits**
 - **Android only.** The iOS project exists but is not set up: no widgets, no SMS, no app icon.
@@ -154,6 +180,10 @@ Built with Flutter, `shared_preferences`, `dynamic_color`, `home_widget`, `flutt
 ## Privacy
 
 Subscriptions and settings stay on the device. The only network request that does not go to Google is the download of public exchange rates, and it carries no personal data. The full text is in [store/privacy-policy.md](store/privacy-policy.md).
+
+## Support
+
+Recur is free and open source. If you find it useful and want to say thanks, you can optionally send a donation: **[donationalerts.com/r/hashonq1](https://www.donationalerts.com/r/hashonq1)**. Donations are voluntary and do not unlock anything.
 
 ## License
 

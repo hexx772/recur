@@ -47,8 +47,8 @@ class AppSubApp extends StatelessWidget {
           builder: (context, _) {
             final s = store.settings;
             final palette = kPalettes[s.paletteIndex.clamp(0, kPalettes.length - 1)];
-            final lightSeed = palette.seed ?? lightDynamic?.primary;
-            final darkSeed = palette.seed ?? darkDynamic?.primary;
+            // «Из обоев»: системная схема как есть; иначе схема от цвета палитры.
+            final useSystem = palette.seed == null;
             return MaterialApp(
               title: 'Recur',
               debugShowCheckedModeBanner: false,
@@ -67,9 +67,17 @@ class AppSubApp extends StatelessWidget {
               builder: (context, child) =>
                   KeyedSubtree(key: ValueKey(appLocale), child: child!),
               themeMode: s.themeMode,
-              theme: buildTheme(expressiveScheme(Brightness.light, seed: lightSeed)),
+              theme: buildTheme(expressiveScheme(Brightness.light,
+                  seed: palette.seed,
+                  system: useSystem
+                      ? schemeFromSystem(lightDynamic, Brightness.light)
+                      : null)),
               darkTheme: buildTheme(expressiveScheme(Brightness.dark,
-                  seed: darkSeed, amoled: s.amoled)),
+                  seed: palette.seed,
+                  system: useSystem
+                      ? schemeFromSystem(darkDynamic, Brightness.dark)
+                      : null,
+                  amoled: s.amoled)),
               home: HomeShell(store: store),
             );
           },

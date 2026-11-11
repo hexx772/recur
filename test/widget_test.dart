@@ -7,7 +7,8 @@ import 'package:appsub/services/rates_service.dart';
 import 'package:appsub/data/known_services.dart';
 import 'package:appsub/l10n/tr.dart';
 import 'package:appsub/theme/app_theme.dart';
-import 'package:flutter/material.dart' show Locale, ThemeMode;
+import 'package:flutter/material.dart'
+    show Brightness, HSVColor, Locale, ThemeMode;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:appsub/services/email_parser.dart';
 import 'package:appsub/services/sms_service.dart';
@@ -15,6 +16,20 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  group('Палитры', () {
+    test('основной цвет сохраняет оттенок плитки палитры', () {
+      for (final p in kPalettes.where((p) => p.seed != null)) {
+        final seedHue = HSVColor.fromColor(p.seed!).hue;
+        final primaryHue = HSVColor.fromColor(
+                expressiveScheme(Brightness.light, seed: p.seed).primary)
+            .hue;
+        var diff = (seedHue - primaryHue).abs();
+        if (diff > 180) diff = 360 - diff;
+        expect(diff, lessThan(25), reason: '${p.name}: $seedHue vs $primaryHue');
+      }
+    });
+  });
 
   group('Английский язык', () {
     final cyr = RegExp(r'[А-Яа-яЁё]');
