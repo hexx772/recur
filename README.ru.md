@@ -11,6 +11,7 @@
   <img alt="Design" src="https://img.shields.io/badge/design-Material%203-6750A4">
   <img alt="License" src="https://img.shields.io/badge/license-MIT-green">
   <img alt="Status" src="https://img.shields.io/badge/status-beta-orange">
+  <a href="https://t.me/recur_app"><img alt="Telegram" src="https://img.shields.io/badge/Telegram-recur__app-26A5E4?logo=telegram&logoColor=white"></a>
   <a href="https://www.donationalerts.com/r/hashonq1"><img alt="Donate" src="https://img.shields.io/badge/donate-DonationAlerts-F57D07"></a>
 </p>
 
@@ -26,12 +27,12 @@ Recur собирает все ваши подписки в одном месте
 
 ## Скачать
 
-Готовый APK лежит в разделе [Releases](https://github.com/hexx772/recur/releases/latest): **Recur-1.0.0.apk** (около 58 МБ, Android 7.0 и новее).
+Готовый APK лежит в разделе [Releases](https://github.com/hexx772/recur/releases/latest): **Recur-1.1.0.apk** (около 60 МБ, Android 7.0 и новее).
 
 1. Скачайте APK на телефон и откройте его. Android попросит разрешить установку из этого источника.
-2. По желанию проверьте файл. SHA-256: `4f78fedec58e51d11f9a510aa7c10d99e505bbc52891deb6a5a6dd41372c2bbf`
+2. По желанию проверьте файл. SHA-256: `702d6e0f48f38ecb0aac5bb082c12e4b718bece6aa86c2b7fbb775df45e9356d`
 
-APK подписан стандартным **отладочным ключом** Android, а не ключом магазина. Для знакомства с приложением это нормально, но это не сборка для Google Play. Будущую сборку с другой подписью можно будет поставить только после удаления этой, поэтому заранее сделайте резервную копию. Вход через Gmail в этой сборке не работает, пока вы не настроите собственный OAuth-клиент Google.
+APK подписан новым релизным ключом, отличным от v1.0.0 (там был отладочный). Чтобы обновиться с v1.0.0, сделайте экспорт копии в старом приложении, удалите его, установите это и восстановите копию. Вход через Gmail в этой сборке не работает, пока вы не настроите собственный OAuth-клиент Google.
 
 ## Скриншоты
 
@@ -136,7 +137,7 @@ Recur следует Material 3 и берёт идеи Expressive. Во Flutter 
 
 **Известные ограничения**
 - **Только Android.** Проект iOS есть, но не настроен: нет виджетов, SMS и иконки приложения.
-- Release-сборка подписана отладочным ключом. Перед публикацией нужен настоящий ключ.
+- Этот APK для установки из файла. Для Google Play собирается отдельная версия без разрешения на SMS.
 - Для входа через Gmail нужен собственный OAuth-клиент в Google Cloud. Чтобы доступом `gmail.readonly` могли пользоваться другие люди, Google требует проверку приложения.
 - `READ_SMS` в Google Play относится к ограниченным разрешениям. Сборка для Play должна обойтись без SMS.
 - Бесплатный сервис курсов (`open.er-api.com`) просит указывать источник; строки с указанием в приложении пока нет.
@@ -206,6 +207,10 @@ store/                   политика конфиденциальности �
 ## Поддержать
 
 Recur бесплатный и с открытым кодом. Если приложение вам пригодилось и хочется сказать спасибо, можно по желанию отправить донат: **[donationalerts.com/r/hashonq1](https://www.donationalerts.com/r/hashonq1)**. Донаты добровольные и ничего не открывают.
+
+## Новости и обратная связь
+
+Обновления, список изменений и сообщения об ошибках: **[t.me/recur_app](https://t.me/recur_app)**. Можно также открыть [issue](https://github.com/hexx772/recur/issues).
 
 ## Лицензия
 

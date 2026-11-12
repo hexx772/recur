@@ -11,6 +11,7 @@
   <img alt="Design" src="https://img.shields.io/badge/design-Material%203-6750A4">
   <img alt="License" src="https://img.shields.io/badge/license-MIT-green">
   <img alt="Status" src="https://img.shields.io/badge/status-beta-orange">
+  <a href="https://t.me/recur_app"><img alt="Telegram" src="https://img.shields.io/badge/Telegram-recur__app-26A5E4?logo=telegram&logoColor=white"></a>
   <a href="https://www.donationalerts.com/r/hashonq1"><img alt="Donate" src="https://img.shields.io/badge/donate-DonationAlerts-F57D07"></a>
 </p>
 
@@ -26,12 +27,12 @@ Recur keeps all your subscriptions in one place so a charge never catches you by
 
 ## Download
 
-The ready-to-install APK is in [Releases](https://github.com/hexx772/recur/releases/latest): **Recur-1.0.0.apk** (about 58 MB, Android 7.0 or newer).
+The ready-to-install APK is in [Releases](https://github.com/hexx772/recur/releases/latest): **Recur-1.1.0.apk** (about 60 MB, Android 7.0 or newer).
 
 1. Download the APK on your phone and open it. Android will ask you to allow installs from that source.
-2. Optional: check the file. SHA-256: `4f78fedec58e51d11f9a510aa7c10d99e505bbc52891deb6a5a6dd41372c2bbf`
+2. Optional: check the file. SHA-256: `702d6e0f48f38ecb0aac5bb082c12e4b718bece6aa86c2b7fbb775df45e9356d`
 
-The APK is signed with the standard Android **debug key**, not a store key. That is fine for trying the app, but it is not a Google Play build. A future build signed with another key can only be installed after uninstalling this one, so export a backup first. Gmail sign-in does not work in this build until you set up your own Google OAuth client.
+The APK is signed with a new release key, different from v1.0.0 (which used the debug key). To update from v1.0.0, export a backup in the old app, uninstall it, install this one and restore the backup. Gmail sign-in does not work in this build until you set up your own Google OAuth client.
 
 ## Screenshots
 
@@ -138,7 +139,7 @@ This is an honest snapshot of the current state.
 
 **Known limits**
 - **Android only.** The iOS project exists but is not set up: no widgets, no SMS, no app icon.
-- The release build is signed with the debug key. A real release key is needed before publishing.
+- This APK is for installing from a file. Google Play gets a separate build without the SMS permission.
 - Gmail sign-in needs your own Google Cloud OAuth client. Google also requires app verification for the `gmail.readonly` scope before other people can use it.
 - `READ_SMS` is a restricted permission on Google Play. A Play build should leave SMS out.
 - The free exchange-rate service (`open.er-api.com`) asks for attribution; a credit line is not in the app yet.
@@ -208,6 +209,10 @@ Subscriptions and settings stay on the device. The only network request that doe
 ## Support
 
 Recur is free and open source. If you find it useful and want to say thanks, you can optionally send a donation: **[donationalerts.com/r/hashonq1](https://www.donationalerts.com/r/hashonq1)**. Donations are voluntary and do not unlock anything.
+
+## News and feedback
+
+Updates, release notes and bug reports: **[t.me/recur_app](https://t.me/recur_app)**. You can also open an [issue](https://github.com/hexx772/recur/issues).
 
 ## License
 
