@@ -28,7 +28,19 @@ class AppSettings extends ChangeNotifier {
   /// Чисто чёрный фон в тёмной теме (экономит заряд на OLED).
   bool amoled = false;
 
+  /// Месячный лимит расходов в основной валюте (0 = без лимита).
+  double monthlyBudget = 0;
+
+  /// Свои категории подписок (добавляются к встроенным).
+  List<String> customCategories = [];
+
+  /// Блокировка приложения отпечатком, лицом или PIN-кодом телефона.
+  bool appLock = false;
+
   Map<String, dynamic> toJson() => {
+        'monthlyBudget': monthlyBudget,
+        'customCategories': customCategories,
+        'appLock': appLock,
         'baseCurrency': baseCurrency,
         'convertAll': convertAll,
         'remindersEnabled': remindersEnabled,
@@ -48,6 +60,11 @@ class AppSettings extends ChangeNotifier {
     themeMode = ThemeMode.values.asNameMap()[mode] ?? themeMode;
     paletteIndex = (j['paletteIndex'] as int? ?? paletteIndex).clamp(0, 99);
     amoled = j['amoled'] as bool? ?? amoled;
+    monthlyBudget = ((j['monthlyBudget'] as num?)?.toDouble() ?? monthlyBudget)
+        .clamp(0, 1e9);
+    final cats = j['customCategories'];
+    if (cats is List) customCategories = [for (final c in cats) '$c'];
+    appLock = j['appLock'] as bool? ?? appLock;
   }
 
   Future<void> load() async {
@@ -77,7 +94,13 @@ class AppSettings extends ChangeNotifier {
     ThemeMode? themeMode,
     int? paletteIndex,
     bool? amoled,
+    double? monthlyBudget,
+    List<String>? customCategories,
+    bool? appLock,
   }) async {
+    this.monthlyBudget = monthlyBudget ?? this.monthlyBudget;
+    this.customCategories = customCategories ?? this.customCategories;
+    this.appLock = appLock ?? this.appLock;
     this.baseCurrency = baseCurrency ?? this.baseCurrency;
     this.convertAll = convertAll ?? this.convertAll;
     this.remindersEnabled = remindersEnabled ?? this.remindersEnabled;

@@ -1,0 +1,6 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- БЕТА: чтение SMS для поиска подписок. Запрашивается только по кнопке.
+         Только в сборке full (для установки из файла): правила Google Play
+         разрешают READ_SMS почти исключительно приложениям-мессенджерам. -->
+    <uses-permission android:name="android.permission.READ_SMS" />
+</manifest>

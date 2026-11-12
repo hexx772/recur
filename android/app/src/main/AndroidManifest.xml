@@ -2,9 +2,15 @@
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
-    <!-- БЕТА: чтение SMS для поиска подписок. Запрашивается только по кнопке. -->
-    <uses-permission android:name="android.permission.READ_SMS"/>
+    <!-- Блокировка приложения отпечатком или PIN. -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
+    <!-- Разрешение READ_SMS (поиск подписок в SMS) лежит в src/full/AndroidManifest.xml:
+         в сборку для Google Play (flavor play) оно не попадает. -->
     <application
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:localeConfig="@xml/locales_config"
         android:label="Recur"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">

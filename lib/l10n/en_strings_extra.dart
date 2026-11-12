@@ -1,0 +1,62 @@
+/// Английские переводы, добавленные вручную после первой генерации словаря.
+/// Ключ ― русский текст из кода. Полноту проверяет тест в test/widget_test.dart.
+const Map<String, String> kEnExtra = {
+  'завершена': 'ended',
+  'ПРОГНОЗ НА 12 МЕСЯЦЕВ': '12-MONTH FORECAST',
+  'Всего за 12 месяцев: {sum} {base}': 'Total over 12 months: {sum} {base}',
+  'Цены выросли: +{sum} {base} в год ({n})':
+      'Prices went up: +{sum} {base} per year ({n})',
+  'Календарь': 'Calendar',
+  'Сегодня': 'Today',
+  'Сумма за месяц': 'Total for the month',
+  'Списаний: {n}': 'Charges: {n}',
+  'В этом месяце списаний нет': 'No charges this month',
+  'В этот день списаний нет': 'No charges on this day',
+  'первое платное списание': 'first paid charge',
+  'Новая категория': 'New category',
+  'Название категории': 'Category name',
+  'Своя категория': 'Custom category',
+  'Имена остальных (через запятую)': 'Names of the others (comma separated)',
+  'Подписка заканчивается': 'Subscription ends',
+  'Оплачено до определённой даты? Напомним заранее':
+      "Paid until a certain date? We'll remind you in advance",
+  'Изменить дату': 'Change date',
+  'История цены': 'Price history',
+  'Поиск по названию или категории': 'Search by name or category',
+  'Все': 'All',
+  'Поиск': 'Search',
+  'Сортировка': 'Sort',
+  'По дате списания': 'By charge date',
+  'По цене': 'By price',
+  'По названию': 'By name',
+  'Ничего не найдено': 'Nothing found',
+  'Лимит превышен: {spent} из {budget} {base}':
+      'Limit exceeded: {spent} of {budget} {base}',
+  'Лимит: {spent} из {budget} {base}': 'Limit: {spent} of {budget} {base}',
+  'Подтвердите, что это вы': "Confirm it's you",
+  'Приложение заблокировано': 'The app is locked',
+  'Разблокировать': 'Unlock',
+  'Месячный лимит расходов': 'Monthly spending limit',
+  'Сумма в {base}': 'Amount in {base}',
+  '0 ― без лимита': '0 = no limit',
+  'Сохранить': 'Save',
+  'Сначала включите блокировку экрана в настройках телефона':
+      'First set up a screen lock in your phone settings',
+  'Подтвердите включение блокировки': 'Confirm to turn on the lock',
+  'Курсы предоставляет Exchange Rate API': 'Rates provided by Exchange Rate API',
+  'Лимит расходов': 'Spending limit',
+  'Месячный лимит': 'Monthly limit',
+  'Не задан': 'Not set',
+  'Безопасность': 'Security',
+  'Блокировка приложения': 'App lock',
+  'Отпечаток, лицо или PIN телефона при открытии':
+      'Fingerprint, face or phone PIN on open',
+  'Импорт из таблицы (CSV)': 'Import from spreadsheet (CSV)',
+  'Файл в том же формате, что и экспорт':
+      'A file in the same format as the export',
+  'Как отменить': 'How to cancel',
+  'Отложить на день': 'Snooze for a day',
+  '{name} скоро заканчивается': '{name} ends soon',
+  'Оплачено до {date}. Продлить или отказаться?':
+      'Paid until {date}. Renew or let it go?',
+};

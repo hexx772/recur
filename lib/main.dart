@@ -7,6 +7,7 @@ import 'data/app_settings.dart';
 import 'l10n/tr.dart';
 import 'data/subscription_store.dart';
 import 'screens/home_shell.dart';
+import 'screens/lock_gate.dart';
 import 'services/notification_service.dart';
 import 'services/rates_service.dart';
 import 'theme/app_theme.dart';
@@ -78,7 +79,10 @@ class AppSubApp extends StatelessWidget {
                       ? schemeFromSystem(darkDynamic, Brightness.dark)
                       : null,
                   amoled: s.amoled)),
-              home: HomeShell(store: store),
+              home: LockGate(
+                settings: s,
+                child: HomeShell(store: store),
+              ),
             );
           },
         );

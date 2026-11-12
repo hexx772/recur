@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'en_strings.dart';
+import 'en_strings_extra.dart';
 
 /// Язык интерфейса: 'ru' или 'en'. Выбирается по языку системы.
 String appLocale = 'ru';
@@ -17,7 +18,7 @@ String resolveAppLocale(Locale l) =>
 void setAppLocaleFrom(Locale l) => appLocale = resolveAppLocale(l);
 
 /// Перевод: ключом служит русский текст. Если перевода нет, показывается русский.
-String tr(String ru) => isRu ? ru : (kEn[ru] ?? ru);
+String tr(String ru) => isRu ? ru : (kEn[ru] ?? kEnExtra[ru] ?? ru);
 
 /// Перевод строки с параметрами вида `{name}`.
 String trf(String ru, Map<String, Object> args) {

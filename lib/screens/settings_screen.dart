@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import '../config.dart';
 import '../data/known_services.dart';
+import '../services/app_lock.dart';
 import '../data/subscription_store.dart';
 import '../services/backup_service.dart';
 import '../services/notification_service.dart';
@@ -48,6 +51,66 @@ class SettingsScreen extends StatelessWidget {
     } catch (e) {
       if (context.mounted) _snack(context, trf('Не удалось импортировать: {e}', {'e': e}));
     }
+  }
+
+  Future<void> _importCsv(BuildContext context) async {
+    try {
+      final n = await BackupService.importCsv(store);
+      if (n != null && context.mounted) {
+        _snack(context, trf('Импортировано подписок: {n}', {'n': n}));
+      }
+    } catch (e) {
+      if (context.mounted) {
+        _snack(context, trf('Не удалось импортировать: {e}', {'e': e}));
+      }
+    }
+  }
+
+  /// Диалог месячного лимита расходов.
+  Future<void> _editBudget(BuildContext context) async {
+    final s = store.settings;
+    final c = TextEditingController(
+        text: s.monthlyBudget > 0 ? s.monthlyBudget.toStringAsFixed(0) : '');
+    final v = await showDialog<double>(
+      context: context,
+      builder: (d) => AlertDialog(
+        title: Text(tr('Месячный лимит расходов')),
+        content: TextField(
+          controller: c,
+          autofocus: true,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          decoration: InputDecoration(
+            labelText: trf('Сумма в {base}', {'base': s.baseCurrency}),
+            helperText: tr('0 ― без лимита'),
+          ),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(d), child: Text(tr('Отмена'))),
+          FilledButton(
+            onPressed: () => Navigator.pop(
+                d, double.tryParse(c.text.replaceAll(',', '.')) ?? 0),
+            child: Text(tr('Сохранить')),
+          ),
+        ],
+      ),
+    );
+    c.dispose();
+    if (v != null) await s.update(monthlyBudget: v < 0 ? 0 : v);
+  }
+
+  Future<void> _toggleLock(BuildContext context, bool on) async {
+    if (on) {
+      if (!await AppLock.supported()) {
+        if (context.mounted) {
+          _snack(context, tr('Сначала включите блокировку экрана в настройках телефона'));
+        }
+        return;
+      }
+      final ok = await AppLock.authenticate(tr('Подтвердите включение блокировки'));
+      if (!ok) return;
+    }
+    await store.settings.update(appLock: on);
   }
 
   Future<void> _export(BuildContext context, Future<void> Function() f) async {
@@ -224,6 +287,41 @@ class SettingsScreen extends StatelessWidget {
                           icon: const Icon(Icons.refresh_rounded),
                         ),
                       ),
+                      ListTile(
+                        leading: const Icon(Icons.info_outline_rounded),
+                        title: Text(tr('Курсы предоставляет Exchange Rate API')),
+                        trailing: const Icon(Icons.open_in_new_rounded),
+                        onTap: () => launchUrl(
+                            Uri.parse('https://www.exchangerate-api.com'),
+                            mode: LaunchMode.externalApplication),
+                      ),
+                    ],
+                  ),
+                  _Group(
+                    title: tr('Лимит расходов'),
+                    children: [
+                      ListTile(
+                        leading: const Icon(Icons.savings_outlined),
+                        title: Text(tr('Месячный лимит')),
+                        subtitle: Text(s.monthlyBudget > 0
+                            ? '${NumberFormat('#,##0', appLocale).format(s.monthlyBudget)} ${s.baseCurrency}'
+                            : tr('Не задан')),
+                        trailing: const Icon(Icons.edit_outlined),
+                        onTap: () => _editBudget(context),
+                      ),
+                    ],
+                  ),
+                  _Group(
+                    title: tr('Безопасность'),
+                    children: [
+                      SwitchListTile(
+                        secondary: const Icon(Icons.lock_outline_rounded),
+                        title: Text(tr('Блокировка приложения')),
+                        subtitle: Text(
+                            tr('Отпечаток, лицо или PIN телефона при открытии')),
+                        value: s.appLock,
+                        onChanged: (v) => _toggleLock(context, v),
+                      ),
                     ],
                   ),
                   _Group(
@@ -250,6 +348,13 @@ class SettingsScreen extends StatelessWidget {
                             tr('Подписки и настройки возвращаются из файла копии')),
                         onTap: () => _import(context),
                       ),
+                      ListTile(
+                        leading: const Icon(Icons.file_open_rounded),
+                        title: Text(tr('Импорт из таблицы (CSV)')),
+                        subtitle: Text(
+                            tr('Файл в том же формате, что и экспорт')),
+                        onTap: () => _importCsv(context),
+                      ),
                     ],
                   ),
                   _Group(
@@ -266,7 +371,8 @@ class SettingsScreen extends StatelessWidget {
                               builder: (_) => EmailBetaScreen(store: store)),
                         ),
                       ),
-                      ListTile(
+                      if (kSmsEnabled)
+                        ListTile(
                         leading: const Icon(Icons.sms_outlined),
                         title: Text(tr('SMS банка (Android)')),
                         subtitle:

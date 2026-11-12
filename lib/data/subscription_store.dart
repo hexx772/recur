@@ -8,6 +8,8 @@ import '../services/home_widget_sync.dart';
 import '../services/notification_service.dart';
 import '../services/rates_service.dart';
 import 'app_settings.dart';
+import 'csv_import.dart';
+import 'known_services.dart';
 import '../l10n/tr.dart';
 
 /// Локальное хранилище подписок. Данные остаются на устройстве.
@@ -26,7 +28,11 @@ class SubscriptionStore extends ChangeNotifier {
 
   List<Subscription> get items {
     final l = [..._items];
-    l.sort((a, b) => a.upcomingCharge.compareTo(b.upcomingCharge));
+    // Завершённые подписки в конце, остальные по ближайшему списанию.
+    l.sort((a, b) {
+      if (a.isEnded != b.isEnded) return a.isEnded ? 1 : -1;
+      return a.upcomingCharge.compareTo(b.upcomingCharge);
+    });
     return l;
   }
 
@@ -55,6 +61,17 @@ class SubscriptionStore extends ChangeNotifier {
   /// Стоимость подписки в месяц в основной валюте, или null, если курса нет.
   double? monthlyInBase(Subscription s) =>
       rates.convert(s.perMonth, s.currency, settings.baseCurrency);
+
+  /// Расходы в месяц, сведённые в основную валюту (для лимита расходов).
+  /// Подписки без известного курса пропускаются.
+  double get monthlyInBaseTotal {
+    var t = 0.0;
+    for (final s in _items) {
+      final v = monthlyInBase(s);
+      if (v != null) t += v;
+    }
+    return t;
+  }
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
@@ -175,6 +192,32 @@ class SubscriptionStore extends ChangeNotifier {
       await settings.applyJson(j['settings'] as Map<String, dynamic>);
     }
     return incoming.length;
+  }
+
+  /// Импорт из CSV (формат экспорта). Дубликаты (то же название, сумма и валюта)
+  /// пропускаются. Новые категории попадают в «свои». Возвращает число
+  /// добавленных подписок.
+  Future<int> importCsv(String text) async {
+    final parsed = parseSubscriptionsCsv(text);
+    var added = 0;
+    final cats = [...settings.customCategories];
+    for (final s in parsed) {
+      final dup = _items.any((e) =>
+          e.name.toLowerCase() == s.name.toLowerCase() &&
+          e.price == s.price &&
+          e.currency == s.currency);
+      if (dup) continue;
+      _items.add(s);
+      added++;
+      if (!kCategories.contains(s.category) && !cats.contains(s.category)) {
+        cats.add(s.category);
+      }
+    }
+    if (cats.length != settings.customCategories.length) {
+      await settings.update(customCategories: cats);
+    }
+    if (added > 0) await _save();
+    return added;
   }
 
   @override

@@ -1,11 +1,12 @@
 package com.appsub.appsub
 
 import android.net.Uri
-import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
-class MainActivity : FlutterActivity() {
+// FlutterFragmentActivity нужна пакету local_auth (блокировка приложения).
+class MainActivity : FlutterFragmentActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         // БЕТА: чтение входящих SMS для поиска подписок. Читает только

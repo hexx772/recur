@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../config.dart';
 import '../data/subscription_store.dart';
 import '../models/subscription.dart';
 import '../theme/app_theme.dart';
@@ -11,9 +12,104 @@ import 'email_beta_screen.dart';
 import 'sms_beta_screen.dart';
 import '../l10n/tr.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key, required this.store});
   final SubscriptionStore store;
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+enum _Sort { date, price, name }
+
+class _HomeScreenState extends State<HomeScreen> {
+  SubscriptionStore get store => widget.store;
+
+  bool _searching = false;
+  String _query = '';
+  String? _category;
+  _Sort _sort = _Sort.date;
+  final _searchCtl = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchCtl.dispose();
+    super.dispose();
+  }
+
+  /// Подписки с учётом поиска, фильтра по категории и сортировки.
+  List<Subscription> _visible(List<Subscription> all) {
+    final q = _query.trim().toLowerCase();
+    final l = all.where((s) {
+      final okQuery = q.isEmpty ||
+          s.name.toLowerCase().contains(q) ||
+          tr(s.category).toLowerCase().contains(q);
+      return okQuery && (_category == null || s.category == _category);
+    }).toList();
+    switch (_sort) {
+      case _Sort.date:
+        break; // хранилище уже отдаёт по дате списания
+      case _Sort.price:
+        double v(Subscription s) => store.monthlyInBase(s) ?? s.perMonth;
+        l.sort((a, b) => v(b).compareTo(v(a)));
+      case _Sort.name:
+        l.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    }
+    return l;
+  }
+
+  /// Строка поиска и фильтр по категориям.
+  Widget _searchBar(List<Subscription> all) {
+    final cats = <String>{for (final s in all) s.category}.toList();
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      child: Column(
+        children: [
+          TextField(
+            controller: _searchCtl,
+            autofocus: true,
+            onChanged: (v) => setState(() => _query = v),
+            decoration: InputDecoration(
+              hintText: tr('Поиск по названию или категории'),
+              prefixIcon: const Icon(Icons.search_rounded),
+              suffixIcon: _query.isEmpty
+                  ? null
+                  : IconButton(
+                      icon: const Icon(Icons.close_rounded),
+                      onPressed: () => setState(() {
+                        _query = '';
+                        _searchCtl.clear();
+                      }),
+                    ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 44,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: [
+                FilterChip(
+                  label: Text(tr('Все')),
+                  selected: _category == null,
+                  onSelected: (_) => setState(() => _category = null),
+                ),
+                for (final c in cats) ...[
+                  const SizedBox(width: 8),
+                  FilterChip(
+                    label: Text(tr(c)),
+                    selected: _category == c,
+                    onSelected: (v) =>
+                        setState(() => _category = v ? c : null),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   Future<void> _add(BuildContext context) async {
     final s = await Navigator.push<Subscription>(
@@ -119,7 +215,8 @@ class HomeScreen extends StatelessWidget {
                     MaterialPageRoute(builder: (_) => EmailBetaScreen(store: store)));
               },
             ),
-            ListTile(
+            if (kSmsEnabled)
+              ListTile(
               leading: const Icon(Icons.sms_outlined),
               title: Text(tr('В SMS банка (Android)')),
               onTap: () {
@@ -140,7 +237,8 @@ class HomeScreen extends StatelessWidget {
     return ListenableBuilder(
       listenable: store,
       builder: (context, _) {
-        final items = store.items;
+        final all = store.items;
+        final items = _visible(all);
         return Scaffold(
           floatingActionButton: TweenAnimationBuilder<double>(
             tween: Tween(begin: 0, end: 1),
@@ -159,6 +257,37 @@ class HomeScreen extends StatelessWidget {
               SliverAppBar.large(
                 title: Text(tr('Подписки')),
                 actions: [
+                  if (all.isNotEmpty) ...[
+                    IconButton(
+                      tooltip: tr('Поиск'),
+                      icon: Icon(_searching
+                          ? Icons.search_off_rounded
+                          : Icons.search_rounded),
+                      onPressed: () => setState(() {
+                        _searching = !_searching;
+                        if (!_searching) {
+                          _query = '';
+                          _category = null;
+                          _searchCtl.clear();
+                        }
+                      }),
+                    ),
+                    PopupMenuButton<_Sort>(
+                      tooltip: tr('Сортировка'),
+                      icon: const Icon(Icons.sort_rounded),
+                      initialValue: _sort,
+                      onSelected: (v) => setState(() => _sort = v),
+                      itemBuilder: (_) => [
+                        PopupMenuItem(
+                            value: _Sort.date,
+                            child: Text(tr('По дате списания'))),
+                        PopupMenuItem(
+                            value: _Sort.price, child: Text(tr('По цене'))),
+                        PopupMenuItem(
+                            value: _Sort.name, child: Text(tr('По названию'))),
+                      ],
+                    ),
+                  ],
                   Padding(
                     padding: const EdgeInsets.only(right: 8),
                     child: IconButton.filledTonal(
@@ -169,7 +298,9 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ],
               ),
-              if (items.isEmpty)
+              if (all.isNotEmpty && _searching)
+                SliverToBoxAdapter(child: _searchBar(all)),
+              if (all.isEmpty)
                 SliverFillRemaining(
                   hasScrollBody: false,
                   child: _EmptyState(color: scheme.primary),
@@ -180,11 +311,21 @@ class HomeScreen extends StatelessWidget {
                     index: 0,
                     child: _Summary(
                       totals: store.monthlyTotals,
-                      count: items.length,
+                      count: all.length,
                       trials: store.trialCount,
+                      budget: store.settings.monthlyBudget,
+                      spent: store.monthlyInBaseTotal,
+                      base: store.settings.baseCurrency,
                     ),
                   ),
                 ),
+                if (items.isEmpty)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.all(32),
+                      child: Center(child: Text(tr('Ничего не найдено'))),
+                    ),
+                  ),
                 SliverPadding(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 112),
                   sliver: SliverList.separated(
@@ -210,10 +351,14 @@ class HomeScreen extends StatelessWidget {
                           ),
                           confirmDismiss: (_) => _confirmDelete(context, s),
                           onDismissed: (_) => store.remove(s.id),
-                          child: _Tile(
-                            sub: s,
-                            onTap: () => _edit(context, s),
-                            onLongPress: () => _actions(context, s),
+                          // Завершённые подписки приглушены.
+                          child: Opacity(
+                            opacity: s.isEnded ? 0.55 : 1,
+                            child: _Tile(
+                              sub: s,
+                              onTap: () => _edit(context, s),
+                              onLongPress: () => _actions(context, s),
+                            ),
                           ),
                         ),
                       );
@@ -277,10 +422,18 @@ class _Summary extends StatelessWidget {
     required this.totals,
     required this.count,
     required this.trials,
+    this.budget = 0,
+    this.spent = 0,
+    this.base = '',
   });
   final Map<String, double> totals;
   final int count;
   final int trials;
+
+  /// Месячный лимит расходов в основной валюте [base] (0 = без лимита).
+  final double budget;
+  final double spent;
+  final String base;
 
   @override
   Widget build(BuildContext context) {
@@ -357,11 +510,80 @@ class _Summary extends StatelessWidget {
                   style: t.bodyMedium?.copyWith(
                       color: scheme.onPrimaryContainer.withValues(alpha: 0.8)),
                 ),
+                if (budget > 0) ...[
+                  const SizedBox(height: 16),
+                  _BudgetBar(budget: budget, spent: spent, base: base),
+                ],
               ],
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Полоса лимита расходов: сколько потрачено от месячного лимита.
+class _BudgetBar extends StatelessWidget {
+  const _BudgetBar(
+      {required this.budget, required this.spent, required this.base});
+  final double budget;
+  final double spent;
+  final String base;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final t = Theme.of(context).textTheme;
+    final money = NumberFormat('#,##0', appLocale);
+    final ratio = spent / budget;
+    final over = ratio > 1;
+    final color = over ? scheme.error : scheme.onPrimaryContainer;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          over
+              ? trf('Лимит превышен: {spent} из {budget} {base}', {
+                  'spent': money.format(spent),
+                  'budget': money.format(budget),
+                  'base': base,
+                })
+              : trf('Лимит: {spent} из {budget} {base}', {
+                  'spent': money.format(spent),
+                  'budget': money.format(budget),
+                  'base': base,
+                }),
+          style: t.labelLarge?.copyWith(color: color),
+        ),
+        const SizedBox(height: 6),
+        TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0, end: ratio.clamp(0.0, 1.0)),
+          duration: const Duration(milliseconds: 900),
+          curve: Curves.easeOutCubic,
+          builder: (context, v, _) => LayoutBuilder(
+            builder: (context, c) => Stack(
+              children: [
+                Container(
+                  height: 10,
+                  decoration: ShapeDecoration(
+                    color: scheme.onPrimaryContainer.withValues(alpha: 0.15),
+                    shape: const StadiumBorder(),
+                  ),
+                ),
+                Container(
+                  height: 10,
+                  width: (c.maxWidth * v).clamp(10.0, c.maxWidth),
+                  decoration: ShapeDecoration(
+                    color: color,
+                    shape: const StadiumBorder(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

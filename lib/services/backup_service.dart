@@ -43,6 +43,15 @@ class BackupService {
         tr('Подписки (CSV)'),
       );
 
+  /// Импорт подписок из CSV (формат экспорта). Возвращает число добавленных
+  /// подписок или null, если выбор отменён.
+  static Future<int?> importCsv(SubscriptionStore store) async {
+    final file = await FilePicker.pickFile();
+    if (file == null) return null;
+    final bytes = await file.readAsBytes();
+    return store.importCsv(utf8.decode(bytes, allowMalformed: true));
+  }
+
   /// Выбор файла копии и импорт. Возвращает число записей или null,
   /// если пользователь отменил выбор.
   static Future<int?> importJson(SubscriptionStore store) async {

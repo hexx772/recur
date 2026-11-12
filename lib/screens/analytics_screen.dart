@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../data/forecast.dart';
 import '../data/subscription_store.dart';
 import '../models/subscription.dart';
 import '../theme/app_theme.dart';
@@ -55,6 +56,27 @@ class AnalyticsScreen extends StatelessWidget {
           final c = store.rates.convert(full, s.currency, base);
           final mine = store.monthlyInBase(s);
           if (c != null && mine != null) saved += c - mine;
+        }
+
+        // Прогноз на 12 месяцев с учётом реальных дат списаний.
+        final forecast = buildForecast(
+          store.items,
+          from: DateTime.now(),
+          toBase: (s, a) => store.rates.convert(a, s.currency, base),
+        );
+
+        // Как повышения цен влияют на расходы за год.
+        var priceImpact = 0.0;
+        var raised = 0;
+        for (final s in store.items) {
+          final y = s.yearlyPriceImpact;
+          if (y > 0) {
+            final c = store.rates.convert(y, s.currency, base);
+            if (c != null) {
+              priceImpact += c;
+              raised++;
+            }
+          }
         }
 
         final colors = _palette(scheme.primary, cats.length);
@@ -181,6 +203,61 @@ class AnalyticsScreen extends StatelessWidget {
                         ),
                       ),
                     ),
+                    const SizedBox(height: 16),
+                    Entrance(
+                      index: 2,
+                      child: _Card(
+                        color: scheme.surfaceContainerHigh,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(tr('ПРОГНОЗ НА 12 МЕСЯЦЕВ'),
+                                style: t.labelMedium?.copyWith(
+                                    letterSpacing: 1.2,
+                                    fontWeight: FontWeight.w800,
+                                    color: scheme.primary)),
+                            const SizedBox(height: 16),
+                            _ForecastChart(forecast: forecast, base: base),
+                            const SizedBox(height: 12),
+                            Text(
+                              trf('Всего за 12 месяцев: {sum} {base}', {
+                                'sum': money.format(forecast.total),
+                                'base': base,
+                              }),
+                              style: t.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.w700),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                  if (raised > 0) ...[
+                    const SizedBox(height: 16),
+                    Entrance(
+                      index: 3,
+                      child: _Card(
+                        color: scheme.errorContainer,
+                        child: Row(
+                          children: [
+                            Icon(Icons.trending_up_rounded,
+                                color: scheme.onErrorContainer),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                trf('Цены выросли: +{sum} {base} в год ({n})', {
+                                  'sum': money.format(priceImpact),
+                                  'base': base,
+                                  'n': raised,
+                                }),
+                                style: t.titleSmall?.copyWith(
+                                    color: scheme.onErrorContainer),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ],
                   if (skipped > 0) ...[
                     const SizedBox(height: 12),
@@ -274,6 +351,83 @@ class AnalyticsScreen extends StatelessWidget {
             .withValue(hsv.value.clamp(0.65, 0.95))
             .toColor(),
     ];
+  }
+}
+
+/// Столбчатая диаграмма расходов по месяцам (анимированная).
+class _ForecastChart extends StatelessWidget {
+  const _ForecastChart({required this.forecast, required this.base});
+  final Forecast forecast;
+  final String base;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final t = Theme.of(context).textTheme;
+    final maxV = forecast.maxMonth <= 0 ? 1.0 : forecast.maxMonth;
+    final compact = NumberFormat.compact(locale: appLocale);
+    return Column(
+      children: [
+        SizedBox(
+          height: 150,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              for (final m in forecast.months)
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 2),
+                    child: TweenAnimationBuilder<double>(
+                      tween: Tween(begin: 0, end: m.amount / maxV),
+                      duration: const Duration(milliseconds: 900),
+                      curve: Curves.easeOutCubic,
+                      builder: (context, v, _) => Column(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          if (m.amount == forecast.maxMonth && m.amount > 0)
+                            Text(compact.format(m.amount),
+                                maxLines: 1,
+                                style: t.labelSmall?.copyWith(
+                                    fontWeight: FontWeight.w800,
+                                    color: scheme.primary)),
+                          const SizedBox(height: 4),
+                          Container(
+                            height: 8 + 100 * v.clamp(0.0, 1.0),
+                            decoration: ShapeDecoration(
+                              color: m.amount == forecast.maxMonth
+                                  ? scheme.primary
+                                  : scheme.primary.withValues(alpha: 0.4),
+                              shape: expressiveShape(8),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            for (final m in forecast.months)
+              Expanded(
+                child: Center(
+                  child: Text(
+                    DateFormat.MMM(appLocale)
+                        .format(m.month)
+                        .substring(0, 1)
+                        .toUpperCase(),
+                    style: t.labelSmall
+                        ?.copyWith(color: scheme.onSurfaceVariant),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ],
+    );
   }
 }
 

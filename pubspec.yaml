@@ -51,6 +51,7 @@ dependencies:
   animations: ^3.0.0
   flutter_localizations:
     sdk: flutter
+  local_auth: ^3.0.2
 
 dev_dependencies:
   flutter_test:
@@ -68,6 +69,8 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
+  # Сборка без указания --flavor идёт в варианте full (с поиском в SMS).
+  default-flavor: full
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in

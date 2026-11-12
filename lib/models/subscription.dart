@@ -28,20 +28,49 @@ extension BillingPeriodX on BillingPeriod {
         BillingPeriod.yearly => 1 / 12,
       };
 
-  DateTime addTo(DateTime d) => switch (this) {
-        BillingPeriod.weekly => d.add(const Duration(days: 7)),
-        BillingPeriod.monthly => _addMonths(d, 1),
-        BillingPeriod.quarterly => _addMonths(d, 3),
-        BillingPeriod.yearly => _addMonths(d, 12),
+  /// Шаг в месяцах (0 для недельной периодичности).
+  int get stepMonths => switch (this) {
+        BillingPeriod.weekly => 0,
+        BillingPeriod.monthly => 1,
+        BillingPeriod.quarterly => 3,
+        BillingPeriod.yearly => 12,
       };
+
+  /// Дата [n]-го шага от [anchor]. Каждый раз считается от исходной даты,
+  /// поэтому число месяца не «дрейфует» (31 января → 28 февраля → 31 марта).
+  DateTime shift(DateTime anchor, int n) => this == BillingPeriod.weekly
+      ? DateTime(anchor.year, anchor.month, anchor.day + 7 * n)
+      : addMonths(anchor, stepMonths * n);
+
+  DateTime addTo(DateTime d) => shift(d, 1);
 }
 
-DateTime _addMonths(DateTime d, int months) {
-  final total = d.month - 1 + months;
-  final year = d.year + total ~/ 12;
+/// Прибавляет месяцы с учётом длины месяца (допускает отрицательные [months]).
+DateTime addMonths(DateTime d, int months) {
+  final total = d.year * 12 + (d.month - 1) + months;
+  final year = total ~/ 12;
   final month = total % 12 + 1;
   final lastDay = DateTime(year, month + 1, 0).day;
   return DateTime(year, month, d.day > lastDay ? lastDay : d.day);
+}
+
+DateTime dayOf(DateTime d) => DateTime(d.year, d.month, d.day);
+
+/// Изменение цены подписки.
+class PriceChange {
+  PriceChange({required this.date, required this.from, required this.to});
+  final DateTime date;
+  final double from;
+  final double to;
+
+  Map<String, dynamic> toJson() =>
+      {'date': date.toIso8601String(), 'from': from, 'to': to};
+
+  factory PriceChange.fromJson(Map<String, dynamic> j) => PriceChange(
+        date: DateTime.parse(j['date'] as String),
+        from: (j['from'] as num).toDouble(),
+        to: (j['to'] as num).toDouble(),
+      );
 }
 
 class Subscription {
@@ -59,6 +88,9 @@ class Subscription {
     this.shareCount = 1,
     this.convert = false,
     this.cancelUrl,
+    this.endDate,
+    this.priceChanges = const [],
+    this.sharedWith = const [],
   });
 
   final String id;
@@ -87,28 +119,75 @@ class Subscription {
   /// Своя ссылка отмены (иначе берётся из справочника или поиск).
   final String? cancelUrl;
 
-  /// Ближайшая дата списания не в прошлом (прокручивает дату вперёд).
-  /// Для пробного периода дата не прокручивается: триал не повторяется.
+  /// Дата окончания подписки (оплачено до…). После неё списаний нет.
+  final DateTime? endDate;
+
+  /// История изменений цены.
+  final List<PriceChange> priceChanges;
+
+  /// Имена остальных участников общей оплаты.
+  final List<String> sharedWith;
+
+  bool get isEnded =>
+      endDate != null && dayOf(endDate!).isBefore(dayOf(DateTime.now()));
+
+  /// Дата [n]-го списания, считая от даты [nextCharge].
+  DateTime chargeAt(int n) => period.shift(nextCharge, n);
+
+  /// Номер первого списания не раньше [from] (но не меньше 0: списаний до
+  /// указанной даты у подписки не было).
+  int _firstIndexAtOrAfter(DateTime from) {
+    final f = dayOf(from);
+    final anchor = dayOf(nextCharge);
+    if (!f.isAfter(anchor)) return 0;
+    int n;
+    if (period == BillingPeriod.weekly) {
+      n = (f.difference(anchor).inDays / 7).floor();
+    } else {
+      final months = (f.year - anchor.year) * 12 + f.month - anchor.month;
+      n = (months / period.stepMonths).floor();
+    }
+    n = (n - 2).clamp(0, 1 << 30);
+    while (dayOf(chargeAt(n)).isBefore(f)) {
+      n++;
+    }
+    return n;
+  }
+
+  /// Списания в промежутке [from]..[to] (включительно). Пробная подписка
+  /// даёт только первое платное списание. После даты окончания списаний нет.
+  List<DateTime> chargesBetween(DateTime from, DateTime to) {
+    final f = dayOf(from);
+    final t = dayOf(to);
+    final end = endDate == null ? null : dayOf(endDate!);
+    bool ok(DateTime d) =>
+        !d.isBefore(f) && !d.isAfter(t) && (end == null || !d.isAfter(end));
+    if (trial) {
+      final d = dayOf(nextCharge);
+      return ok(d) ? [d] : [];
+    }
+    final out = <DateTime>[];
+    var n = _firstIndexAtOrAfter(f);
+    for (var guard = 0; guard < 3000; guard++, n++) {
+      final d = dayOf(chargeAt(n));
+      if (d.isAfter(t)) break;
+      if (ok(d)) out.add(d);
+    }
+    return out;
+  }
+
+  /// Ближайшая дата списания не в прошлом. Для пробного периода дата не
+  /// прокручивается: триал не повторяется.
   DateTime get upcomingCharge {
     if (trial) return nextCharge;
-    final today = DateTime.now();
-    final start = DateTime(today.year, today.month, today.day);
-    var d = nextCharge;
-    var guard = 0;
-    while (d.isBefore(start) && guard++ < 1000) {
-      d = period.addTo(d);
-    }
-    return d;
+    return chargeAt(_firstIndexAtOrAfter(DateTime.now()));
   }
 
-  int get daysLeft {
-    final today = DateTime.now();
-    return upcomingCharge
-        .difference(DateTime(today.year, today.month, today.day))
-        .inDays;
-  }
+  int get daysLeft =>
+      dayOf(upcomingCharge).difference(dayOf(DateTime.now())).inDays;
 
   String get whenLabel {
+    if (isEnded) return tr('завершена');
     final d = daysLeft;
     if (d < 0) return tr('просрочено');
     return d == 0
@@ -121,8 +200,16 @@ class Subscription {
   /// Моя доля одного списания.
   double get myPrice => price / shareCount;
 
-  /// Моя доля в месяц. Пробные подписки пока ничего не стоят.
-  double get perMonth => trial ? 0 : myPrice * period.monthlyFactor();
+  /// Моя доля в месяц. Пробные и завершённые подписки ничего не стоят.
+  double get perMonth =>
+      (trial || isEnded) ? 0 : myPrice * period.monthlyFactor();
+
+  /// Как последнее изменение цены влияет на расходы за год (моя доля).
+  double get yearlyPriceImpact {
+    if (priceChanges.isEmpty || trial || isEnded) return 0;
+    final c = priceChanges.last;
+    return (c.to - c.from) / shareCount * 12 * period.monthlyFactor();
+  }
 
   /// Ссылка, где можно отменить подписку.
   String get cancelLink =>
@@ -142,6 +229,9 @@ class Subscription {
     int? shareCount,
     bool? convert,
     String? cancelUrl,
+    DateTime? endDate,
+    List<PriceChange>? priceChanges,
+    List<String>? sharedWith,
   }) =>
       Subscription(
         id: id,
@@ -157,6 +247,9 @@ class Subscription {
         shareCount: shareCount ?? this.shareCount,
         convert: convert ?? this.convert,
         cancelUrl: cancelUrl ?? this.cancelUrl,
+        endDate: endDate ?? this.endDate,
+        priceChanges: priceChanges ?? this.priceChanges,
+        sharedWith: sharedWith ?? this.sharedWith,
       );
 
   Map<String, dynamic> toJson() => {
@@ -173,6 +266,9 @@ class Subscription {
         'shareCount': shareCount,
         'convert': convert,
         'cancelUrl': cancelUrl,
+        'endDate': endDate?.toIso8601String(),
+        'priceChanges': priceChanges.map((c) => c.toJson()).toList(),
+        'sharedWith': sharedWith,
       };
 
   factory Subscription.fromJson(Map<String, dynamic> j) => Subscription(
@@ -189,6 +285,16 @@ class Subscription {
         shareCount: (j['shareCount'] as int? ?? 1).clamp(1, 99),
         convert: j['convert'] as bool? ?? false,
         cancelUrl: j['cancelUrl'] as String?,
+        endDate: j['endDate'] == null
+            ? null
+            : DateTime.tryParse(j['endDate'] as String),
+        priceChanges: [
+          for (final c in (j['priceChanges'] as List? ?? const []))
+            PriceChange.fromJson(c as Map<String, dynamic>),
+        ],
+        sharedWith: [
+          for (final n in (j['sharedWith'] as List? ?? const [])) n as String,
+        ],
       );
 
   static String encodeList(List<Subscription> l) =>

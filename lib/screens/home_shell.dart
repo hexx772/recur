@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../data/subscription_store.dart';
 import '../services/notification_service.dart';
 import 'analytics_screen.dart';
+import 'calendar_screen.dart';
 import 'home_screen.dart';
 import 'settings_screen.dart';
 import '../l10n/tr.dart';
@@ -55,6 +56,7 @@ class _HomeShellState extends State<HomeShell> {
   Widget build(BuildContext context) {
     final pages = [
       HomeScreen(store: widget.store),
+      CalendarScreen(store: widget.store),
       AnalyticsScreen(store: widget.store),
       SettingsScreen(store: widget.store),
     ];
@@ -83,6 +85,11 @@ class _HomeShellState extends State<HomeShell> {
             icon: Icon(Icons.subscriptions_outlined),
             selectedIcon: Icon(Icons.subscriptions_rounded),
             label: tr('Подписки'),
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.calendar_month_outlined),
+            selectedIcon: Icon(Icons.calendar_month_rounded),
+            label: tr('Календарь'),
           ),
           NavigationDestination(
             icon: Icon(Icons.donut_large_outlined),

@@ -1,3 +1,5 @@
+import '../l10n/tr.dart';
+
 const kCategories = [
   'Видео и музыка',
   'AI',
@@ -14,9 +16,15 @@ const kCurrencies = ['RUB', 'KZT', 'USD', 'EUR', 'GBP'];
 /// в SMS/письмах. Цены зависят от региона, поэтому их здесь нет.
 class KnownService {
   const KnownService(this.name, this.category, this.cancelUrl,
-      {this.keywords = const []});
+      {this.keywords = const [], this.nameEn});
 
   final String name;
+
+  /// Название для английского интерфейса, если оно отличается.
+  final String? nameEn;
+
+  /// Название с учётом языка интерфейса.
+  String get display => (isRu || nameEn == null) ? name : nameEn!;
   final String category;
   final String cancelUrl;
 
@@ -37,6 +45,7 @@ class KnownServices {
         keywords: ['spotify']),
     KnownService('Яндекс Плюс', 'Видео и музыка',
         'https://plus.yandex.ru/my',
+        nameEn: 'Yandex Plus',
         keywords: ['yandex plus', 'яндекс плюс', 'яндекс.плюс', 'yandex.plus']),
     KnownService('Apple Music', 'Видео и музыка',
         'https://support.apple.com/ru-ru/118428',

@@ -42,6 +42,8 @@ class _EditScreenState extends State<EditScreen> {
   late bool _trial;
   late int _share;
   late bool _convert;
+  late final TextEditingController _names;
+  DateTime? _endDate;
 
   @override
   void initState() {
@@ -63,6 +65,8 @@ class _EditScreenState extends State<EditScreen> {
     _convert = s == null || widget.existing == null && widget.draft != null
         ? widget.settings.convertAll
         : s.convert;
+    _names = TextEditingController(text: (s?.sharedWith ?? []).join(', '));
+    _endDate = s?.endDate;
   }
 
   @override
@@ -70,7 +74,52 @@ class _EditScreenState extends State<EditScreen> {
     _name.dispose();
     _price.dispose();
     _cancelUrl.dispose();
+    _names.dispose();
     super.dispose();
+  }
+
+  /// Диалог «своя категория».
+  Future<void> _addCategory() async {
+    final c = TextEditingController();
+    final name = await showDialog<String>(
+      context: context,
+      builder: (d) => AlertDialog(
+        title: Text(tr('Новая категория')),
+        content: TextField(
+          controller: c,
+          autofocus: true,
+          maxLength: 24,
+          textCapitalization: TextCapitalization.sentences,
+          decoration: InputDecoration(labelText: tr('Название категории')),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(d), child: Text(tr('Отмена'))),
+          FilledButton(
+              onPressed: () => Navigator.pop(d, c.text.trim()),
+              child: Text(tr('Добавить'))),
+        ],
+      ),
+    );
+    c.dispose();
+    if (name == null || name.isEmpty) return;
+    final exists = kCategories.contains(name) ||
+        widget.settings.customCategories.contains(name);
+    if (!exists) {
+      await widget.settings
+          .update(customCategories: [...widget.settings.customCategories, name]);
+    }
+    if (mounted) setState(() => _category = name);
+  }
+
+  Future<void> _pickEndDate() async {
+    final d = await showDatePicker(
+      context: context,
+      initialDate: _endDate ?? _date,
+      firstDate: DateTime.now().subtract(const Duration(days: 365)),
+      lastDate: DateTime(2100),
+    );
+    if (d != null) setState(() => _endDate = d);
   }
 
   Future<void> _pickDate() async {
@@ -101,13 +150,28 @@ class _EditScreenState extends State<EditScreen> {
     if (!_form.currentState!.validate()) return;
     final base = widget.existing ?? widget.draft;
     final custom = _cancelUrl.text.trim();
+    final newPrice = double.parse(_price.text.replaceAll(',', '.'));
+    final old = widget.existing;
+    // Если цена изменилась, записываем это в историю.
+    final changes = [...?old?.priceChanges];
+    if (old != null && old.price != newPrice) {
+      changes.add(
+          PriceChange(date: DateTime.now(), from: old.price, to: newPrice));
+    }
+    final others = _share > 1
+        ? _names.text
+            .split(',')
+            .map((e) => e.trim())
+            .where((e) => e.isNotEmpty)
+            .toList()
+        : <String>[];
     Navigator.pop(
       context,
       Subscription(
         id: widget.existing?.id ??
             DateTime.now().microsecondsSinceEpoch.toString(),
         name: _name.text.trim(),
-        price: double.parse(_price.text.replaceAll(',', '.')),
+        price: newPrice,
         currency: _currency,
         period: _period,
         nextCharge: _date,
@@ -118,6 +182,9 @@ class _EditScreenState extends State<EditScreen> {
         shareCount: _share,
         convert: _convert,
         cancelUrl: custom.isEmpty ? null : custom,
+        endDate: _endDate,
+        priceChanges: changes,
+        sharedWith: others,
       ),
     );
   }
@@ -181,9 +248,9 @@ class _EditScreenState extends State<EditScreen> {
                             itemBuilder: (context, i) {
                               final p = KnownServices.all[i];
                               return ActionChip(
-                                label: Text(p.name),
+                                label: Text(p.display),
                                 onPressed: () => setState(() {
-                                  _name.text = p.name;
+                                  _name.text = p.display;
                                   _category = p.category;
                                 }),
                               );
@@ -324,6 +391,28 @@ class _EditScreenState extends State<EditScreen> {
                                 onSelected: (_) =>
                                     setState(() => _category = c),
                               ),
+                            // Свои категории можно удалить крестиком.
+                            for (final c in widget.settings.customCategories)
+                              InputChip(
+                                label: Text(c),
+                                selected: _category == c,
+                                onSelected: (_) =>
+                                    setState(() => _category = c),
+                                onDeleted: () async {
+                                  final cats = [
+                                    ...widget.settings.customCategories
+                                  ]..remove(c);
+                                  await widget.settings
+                                      .update(customCategories: cats);
+                                  if (_category == c) _category = 'Другое';
+                                  if (mounted) setState(() {});
+                                },
+                              ),
+                            ActionChip(
+                              avatar: const Icon(Icons.add_rounded, size: 18),
+                              label: Text(tr('Своя категория')),
+                              onPressed: _addCategory,
+                            ),
                           ],
                         ),
                       ),
@@ -391,6 +480,37 @@ class _EditScreenState extends State<EditScreen> {
                                   )
                                 : null,
                           ),
+                          if (_share > 1) ...[
+                            const SizedBox(height: 8),
+                            TextFormField(
+                              controller: _names,
+                              textCapitalization: TextCapitalization.words,
+                              decoration: InputDecoration(
+                                  labelText:
+                                      tr('Имена остальных (через запятую)')),
+                            ),
+                          ],
+                          const SizedBox(height: 8),
+                          _OptionCard(
+                            icon: Icons.event_busy_rounded,
+                            title: tr('Подписка заканчивается'),
+                            subtitle: _endDate == null
+                                ? tr('Оплачено до определённой даты? Напомним заранее')
+                                : DateFormat.yMMMMd(appLocale).format(_endDate!),
+                            value: _endDate != null,
+                            onChanged: (v) {
+                              if (v) {
+                                _pickEndDate();
+                              } else {
+                                setState(() => _endDate = null);
+                              }
+                            },
+                            trailing: _endDate == null
+                                ? null
+                                : TextButton(
+                                    onPressed: _pickEndDate,
+                                    child: Text(tr('Изменить дату'))),
+                          ),
                           const SizedBox(height: 8),
                           _OptionCard(
                             icon: Icons.currency_exchange_rounded,
@@ -428,11 +548,71 @@ class _EditScreenState extends State<EditScreen> {
                       ),
                     ),
                   ),
+                  if (editing && widget.existing!.priceChanges.isNotEmpty) ...[
+                    const SizedBox(height: 20),
+                    _Section(
+                      title: tr('История цены'),
+                      child: _PriceHistory(
+                        changes: widget.existing!.priceChanges,
+                        currency: _currency,
+                      ),
+                    ),
+                  ],
                 ]),
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Список изменений цены подписки.
+class _PriceHistory extends StatelessWidget {
+  const _PriceHistory({required this.changes, required this.currency});
+  final List<PriceChange> changes;
+  final String currency;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final t = Theme.of(context).textTheme;
+    final money = NumberFormat('#,##0.##', appLocale);
+    final date = DateFormat.yMMMd(appLocale);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: ShapeDecoration(
+        color: scheme.surfaceContainerHigh,
+        shape: expressiveShape(24),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (final c in changes.reversed)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                children: [
+                  Icon(
+                    c.to > c.from
+                        ? Icons.trending_up_rounded
+                        : Icons.trending_down_rounded,
+                    size: 20,
+                    color: c.to > c.from ? scheme.error : scheme.primary,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      '${date.format(c.date)}: ${money.format(c.from)} → ${money.format(c.to)} $currency',
+                      style: t.bodyMedium,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }
